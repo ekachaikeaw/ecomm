@@ -269,3 +269,45 @@ func TestUpdateProduct(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteProduct(t *testing.T) {
+	tcs := []struct {
+		name string
+		test func(*testing.T, *MySQLStorer, sqlmock.Sqlmock)
+	} {
+		{
+			name: "success",
+			test: func(t *testing.T, st *MySQLStorer, mock sqlmock.Sqlmock) {
+				mock.ExpectExec("DELETE FROM products WHERE id=?").
+					WithArgs(1).WillReturnResult(sqlmock.NewResult(1,1))
+				err := st.DeleteProduct(context.Background(), 1)
+				require.NoError(t, err)
+
+				err = mock.ExpectationsWereMet()
+				require.NoError(t, err)
+
+			},
+		},
+		{
+			name: "failed deleting product",
+			test: func(t *testing.T, st *MySQLStorer, mock sqlmock.Sqlmock) {
+				mock.ExpectExec("DELETE FROM products WHERE id=?").
+					WithArgs(1).WillReturnError(fmt.Errorf("error deleting product"))
+				err := st.DeleteProduct(context.Background(), 1)
+				require.Error(t, err)
+
+				err = mock.ExpectationsWereMet()
+				require.NoError(t, err)
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			withTestDB(t, func(db *sqlx.DB, mock sqlmock.Sqlmock) {
+				st := NewMySQLStorer(db)
+				tc.test(t, st, mock)
+			})
+		})
+	}
+}
