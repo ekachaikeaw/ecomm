@@ -98,7 +98,7 @@ func (ms *MySQLStorer) CreateOrder(ctx context.Context, o *Order) (*Order, error
 }
 
 func createOrder(ctx context.Context, tx *sqlx.Tx, o *Order) (*Order, error) {
-	res, err := tx.NamedExecContext(ctx, "INSERT INTO order (payment_method, tax_price, shipping price,total_price) VALUES (:payment_method, :tax_price, :shipping_price, :total_price)", o)
+	res, err := tx.NamedExecContext(ctx, "INSERT INTO orders (payment_method, tax_price, shipping_price, total_price) VALUES (:payment_method, :tax_price, :shipping_price, :total_price)", o)
 	if err != nil {
 		return nil, fmt.Errorf("error inserting order %w", err)
 	}
@@ -191,7 +191,7 @@ func (ms *MySQLStorer) execTx(ctx context.Context, fn func(*sqlx.Tx) error) erro
 		if rbErr := tx.Rollback(); rbErr != nil {
 			return fmt.Errorf("error rolling back transaction: %w", rbErr)
 		}
-		return fmt.Errorf("error rolling back transaction: %w", err)
+		return fmt.Errorf("error in transaction: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -200,3 +200,4 @@ func (ms *MySQLStorer) execTx(ctx context.Context, fn func(*sqlx.Tx) error) erro
 
 	return nil
 }
+
