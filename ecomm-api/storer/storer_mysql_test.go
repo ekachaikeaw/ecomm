@@ -609,3 +609,64 @@ func TestListOrders(t *testing.T) {
 	}
 }
 
+func TestDeleteOrder(t *testing.T) {
+	tcs := []struct {
+		name string
+		test func(*testing.T, *MySQLStorer, sqlmock.Sqlmock) 
+	} {
+		{
+			name: "success",
+			test: func(t *testing.T, st *MySQLStorer, mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("DELETE FROM order_items WHERE order_id=?").WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("DELETE FROM orders WHERE id=?").WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+
+				err := st.DeleteOrder(context.Background(), 1)
+				require.NoError(t, err)
+
+				err = mock.ExpectationsWereMet()
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "failed deleting order item",
+			test: func(t *testing.T, st *MySQLStorer, mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("DELETE FROM order_items WHERE order_id=?").WithArgs(1).WillReturnError(fmt.Errorf("error deleting order items"))
+				mock.ExpectRollback()
+
+				err := st.DeleteOrder(context.Background(), 1)
+				require.Error(t, err)
+
+				err = mock.ExpectationsWereMet()
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "failed deleting order",
+			test: func(t *testing.T, st *MySQLStorer, mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("DELETE FROM order_items WHERE order_id=?").WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("DELETE FROM orders WHERE id=?").WithArgs(1).WillReturnError(fmt.Errorf("error deleting orders"))
+				mock.ExpectRollback()
+
+				err := st.DeleteOrder(context.Background(), 1)
+				require.Error(t, err)
+
+				err = mock.ExpectationsWereMet()
+				require.NoError(t, err)
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			withTestDB(t, func(db *sqlx.DB, mock sqlmock.Sqlmock) {
+				st := NewMySQLStorer(db)
+				tc.test(t, st, mock)
+			})
+		})
+	}
+}
+

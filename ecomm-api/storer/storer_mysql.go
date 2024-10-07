@@ -167,7 +167,7 @@ func (ms *MySQLStorer) DeleteOrder(ctx context.Context, id int64) error {
 			return fmt.Errorf("error deleting order items: %w", err)
 		}
 
-		_, err = tx.ExecContext(ctx, "DELETE FROM order WHERE id=?", id)
+		_, err = tx.ExecContext(ctx, "DELETE FROM orders WHERE id=?", id)
 		if err != nil {
 			return fmt.Errorf("error deleting order: %w", err)
 		}
