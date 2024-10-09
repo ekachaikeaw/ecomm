@@ -233,7 +233,7 @@ func TestUpdateProduct(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, int64(1), cp.ID)
 
-				mock.ExpectExec("UPDATE products SET name=?, image=?, category=?, description=?, rating=?, num_reviews=?, price=?, count_in_stock=? WHERE id=?").
+				mock.ExpectExec("UPDATE products SET name=?, image=?, category=?, description=?, rating=?, num_reviews=?, price=?, count_in_stock=?, updated_at=? WHERE id=?").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 				up, err := st.UpdateProduct(context.Background(), np)
 				require.NoError(t, err)
@@ -248,7 +248,7 @@ func TestUpdateProduct(t *testing.T) {
 		{
 			name: "failed updating product",
 			test: func(t *testing.T, st *MySQLStorer, mock sqlmock.Sqlmock) {
-				mock.ExpectExec("UPDATE products SET name=?, image=?, category=?, description=?, rating=?, num_reviews=?, price=?, count_in_stock=? WHERE id=?").
+				mock.ExpectExec("UPDATE products SET name=?, image=?, category=?, description=?, rating=?, num_reviews=?, price=?, count_in_stock=?, updated_at=? WHERE id=?").
 					WillReturnError(fmt.Errorf("error updating product"))
 				_, err := st.UpdateProduct(context.Background(), np)
 				require.Error(t, err)
