@@ -18,6 +18,9 @@ type handler struct {
 }
 
 func NewHandler(server *server.Server) *handler {
+	if server == nil {
+        panic("server is nil")
+    }
 	return &handler{
 		ctx:    context.Background(),
 		server: server,
@@ -28,6 +31,7 @@ func (h *handler) createProduct(w http.ResponseWriter, r *http.Request) {
 	var p ProductReq
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		http.Error(w, "error decoding request body", http.StatusBadRequest)
+		return
 	}
 
 	product, err := h.server.CreateProduct(h.ctx, toStorerProduct(p))

@@ -9,7 +9,7 @@ import (
 var r *chi.Mux
 
 func RegisterRoutes(handler *handler) *chi.Mux {
-	r := chi.NewRouter()
+	r = chi.NewRouter()
 
 	r.Route("/products", func(r chi.Router) {
 		r.Post("/", handler.createProduct)
