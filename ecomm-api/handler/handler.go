@@ -19,8 +19,8 @@ type handler struct {
 
 func NewHandler(server *server.Server) *handler {
 	if server == nil {
-        panic("server is nil")
-    }
+		panic("server is nil")
+	}
 	return &handler{
 		ctx:    context.Background(),
 		server: server,
