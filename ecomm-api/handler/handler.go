@@ -205,6 +205,18 @@ func (h *handler) deleteOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *handler) createUser(w http.ResponseWriter, r *http.Request) {
+	var u UserReq
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	created, err := h.server.CreateUser(h.ctx, toStorerUsr(u))
+
+
+}
+
 func toStorerOrder(o OrderReq) *storer.Order {
 	return &storer.Order{
 		PaymentMethod: o.PaymentMethod,
