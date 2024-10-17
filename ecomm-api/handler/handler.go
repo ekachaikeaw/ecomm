@@ -9,6 +9,7 @@ import (
 
 	"github.com/ekachaikeaw/ecomm/ecomm-api/server"
 	"github.com/ekachaikeaw/ecomm/ecomm-api/storer"
+	"github.com/ekachaikeaw/ecomm/util"
 	"github.com/go-chi/chi"
 )
 
@@ -212,9 +213,104 @@ func (h *handler) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := h.server.CreateUser(h.ctx, toStorerUsr(u))
+	hashed, err := util.HashPassword(u.Password)
+	if err != nil {
+		http.Error(w, "error hashing password", http.StatusInternalServerError)
+	}
+	u.Password = hashed
 
+	created, err := h.server.CreateUser(h.ctx, toStorerUser(u))
+	if err != nil {
+		http.Error(w, "error creating user", http.StatusInternalServerError)
+		return
+	}
 
+	res := toUserRes(created)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(res)
+}
+
+func (h *handler) listUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := h.server.ListUsers(h.ctx)
+	if err != nil {
+		http.Error(w, "error listing users", http.StatusInternalServerError)
+		return
+	}
+
+	var res ListUserRes
+	for _, u := range users {
+		res.Users = append(res.Users, toUserRes(&u))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
+}
+
+func (h *handler) updateUser(w http.ResponseWriter, r *http.Request) {
+	var u UserReq
+	err := json.NewDecoder(r.Body).Decode(&u)
+	if err != nil {
+		http.Error(w, "error decoding request body", http.StatusInternalServerError)
+		return
+	}
+
+	user, err := h.server.GetUser(h.ctx, u.Email)
+	if err != nil {
+		http.Error(w, "error getting user", http.StatusInternalServerError)
+		return
+	}
+
+	patchUserReq(user, u)
+
+	updated, err := h.server.UpdateUser(h.ctx, user)
+	if err != nil {
+		http.Error(w, "error updating user", http.StatusInternalServerError)
+		return
+	}
+
+	res := toUserRes(updated)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(res)
+}
+
+func patchUserReq(user *storer.User, u UserReq) {
+	if u.Name != "" {
+		user.Name = u.Name
+	}
+	if u.Email != "" {
+		user.Email = u.Email
+	}
+	if u.Password != "" {
+		hashed, err := util.HashPassword(u.Password)
+		if err != nil {
+			panic(err)
+		}
+		user.Password = hashed
+	}
+	if u.IsAdmin {
+		user.IsAdmin = u.IsAdmin
+	}
+	user.UpdatedAt = toTimePtr(time.Now())
+
+}
+
+func toStorerUser(u UserReq) *storer.User {
+	return &storer.User{
+		Name:     u.Name,
+		Email:    u.Email,
+		Password: u.Password,
+		IsAdmin:  u.IsAdmin,
+	}
+}
+
+func toUserRes(u *storer.User) UserRes {
+	return UserRes{
+		Name:    u.Name,
+		Email:   u.Email,
+		IsAdmin: u.IsAdmin,
+	}
 }
 
 func toStorerOrder(o OrderReq) *storer.Order {

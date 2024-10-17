@@ -10,8 +10,8 @@ type Server struct {
 	storer *storer.MySQLStorer
 }
 
-func NewServer(storer *storer.MySQLStorer) *Server{
-	return&Server{
+func NewServer(storer *storer.MySQLStorer) *Server {
+	return &Server{
 		storer: storer,
 	}
 }
@@ -58,7 +58,7 @@ func (s *Server) CreateUser(ctx context.Context, u *storer.User) (*storer.User, 
 
 func (s *Server) GetUser(ctx context.Context, email string) (*storer.User, error) {
 	return s.storer.GetUser(ctx, email)
-} 
+}
 
 func (s *Server) ListUsers(ctx context.Context) ([]storer.User, error) {
 	return s.storer.ListUsers(ctx)
@@ -71,4 +71,3 @@ func (s *Server) UpdateUser(ctx context.Context, u *storer.User) (*storer.User, 
 func (s *Server) DeleteUser(ctx context.Context, id int64) error {
 	return s.storer.DeleteUser(ctx, id)
 }
-
