@@ -293,7 +293,23 @@ func patchUserReq(user *storer.User, u UserReq) {
 		user.IsAdmin = u.IsAdmin
 	}
 	user.UpdatedAt = toTimePtr(time.Now())
+}
 
+func (h *handler) deleteUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	i, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		http.Error(w, "error parsing id", http.StatusInternalServerError)
+		return
+	}
+
+	err = h.server.DeleteUser(h.ctx, i)
+	if err != nil {
+		http.Error(w, "error deleting user", http.StatusInternalServerError)
+		return 
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func toStorerUser(u UserReq) *storer.User {
