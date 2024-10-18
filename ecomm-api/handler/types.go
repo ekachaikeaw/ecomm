@@ -13,7 +13,7 @@ type ProductReq struct {
 	Price        float32 `json:"price"`
 	CountInStock int64   `json:"count_in_stock"`
 }
-    
+
 type ProductRes struct {
 	ID           int64      `json:"id"`
 	Name         string     `json:"name"`
@@ -70,4 +70,14 @@ type UserRes struct {
 
 type ListUserRes struct {
 	Users []UserRes `json:"users"`
+}
+
+type LoginUserReq struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginUserRes struct {
+	AccessToken string  `json:"access_token"`
+	User        UserRes `json:"user"`
 }

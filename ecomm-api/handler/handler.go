@@ -440,3 +440,25 @@ func toProductRes(p *storer.Product) ProductRes {
 		UpdatedAt:    p.UpdatedAt,
 	}
 }
+
+func (h *handler) loginUser(w http.ResponseWriter, r *http.Request) {
+	var u UserReq
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		http.Error(w, "error decoding request body", http.StatusInternalServerError)
+		return
+	}
+
+	gu, err := h.server.GetUser(h.ctx, u.Email)
+	if err != nil {
+		http.Error(w, "error getting user", http.StatusInternalServerError)
+		return
+	}
+
+	err = util.CheckPassword(u.Password, gu.Password)
+	if err != nil {
+		http.Error(w, "wrong password", http.StatusUnauthorized)
+		return
+	}
+
+	//create token 
+}
