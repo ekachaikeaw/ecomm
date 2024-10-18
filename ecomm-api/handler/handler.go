@@ -9,6 +9,7 @@ import (
 
 	"github.com/ekachaikeaw/ecomm/ecomm-api/server"
 	"github.com/ekachaikeaw/ecomm/ecomm-api/storer"
+	"github.com/ekachaikeaw/ecomm/token"
 	"github.com/ekachaikeaw/ecomm/util"
 	"github.com/go-chi/chi"
 )
@@ -16,15 +17,17 @@ import (
 type handler struct {
 	ctx    context.Context
 	server *server.Server
+	tokenMaker *token.JWTMaker
 }
 
-func NewHandler(server *server.Server) *handler {
+func NewHandler(server *server.Server, secretKey string) *handler {
 	if server == nil {
 		panic("server is nil")
 	}
 	return &handler{
 		ctx:    context.Background(),
 		server: server,
+		tokenMaker: token.NewJWTMaker(secretKey),
 	}
 }
 
