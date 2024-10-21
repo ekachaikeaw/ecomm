@@ -13,9 +13,9 @@ import (
 const minSecretKeySize = 32
 
 func main() {
-	var secretKey = envflag.String("SECRET_KEY", "01234567890123456789012345678901")
+	var secretKey = envflag.String("SECRET_KEY", "01234567890123456789012345678901", "secret key for JWT signing")
 	if len(*secretKey) < minSecretKeySize {
-		log.Fatal("SECRET_KEY must be at least %d characters", minSecretKeySize)
+		log.Fatalf("SECRET_KEY must be at least %d characters", minSecretKeySize)
 	}
 
 	db, err := db.NewDatabase()

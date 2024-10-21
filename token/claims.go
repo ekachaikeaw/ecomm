@@ -9,10 +9,10 @@ import (
 )
 
 type UserClaims struct {
-	ID int64 `json:"id"`
-	Email string `json:"email"`
-	IsAdmin bool `json:"is_admin"`
-	jwt.RegisteredClaims  
+	ID      int64  `json:"id"`
+	Email   string `json:"email"`
+	IsAdmin bool   `json:"is_admin"`
+	jwt.RegisteredClaims
 }
 
 func NewUserClaims(id int64, email string, isAdmin bool, duration time.Duration) (*UserClaims, error) {
@@ -22,13 +22,13 @@ func NewUserClaims(id int64, email string, isAdmin bool, duration time.Duration)
 	}
 
 	return &UserClaims{
-		Email: email,
-		ID: id,
+		Email:   email,
+		ID:      id,
 		IsAdmin: isAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID: tokenID.String(),
-			Subject: email,
-			IssuedAt: jwt.NewNumericDate(time.Now()),
+			ID:        tokenID.String(),
+			Subject:   email,
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 		},
 	}, nil
