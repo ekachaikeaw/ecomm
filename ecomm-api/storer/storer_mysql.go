@@ -100,6 +100,7 @@ func (ms *MySQLStorer) CreateOrder(ctx context.Context, o *Order) (*Order, error
 func createOrder(ctx context.Context, tx *sqlx.Tx, o *Order) (*Order, error) {
 	res, err := tx.NamedExecContext(ctx, "INSERT INTO orders (payment_method, tax_price, shipping_price, total_price, user_id) VALUES (:payment_method, :tax_price, :shipping_price, :total_price, :user_id)", o)
 	if err != nil {
+		fmt.Print(err)
 		return nil, fmt.Errorf("error inserting order %w", err)
 	}
 	id, err := res.LastInsertId()
