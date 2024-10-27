@@ -29,11 +29,13 @@ type ProductRes struct {
 }
 
 type OrderReq struct {
+	ID            int64        `json:"id"`
 	Items         []*OrderItem `json:"items"`
-	PaymentMethod string      `json:"payment_method"`
-	TaxPrice      float32     `json:"tax_price"`
-	ShippingPrice float32     `json:"shipping_price"`
-	TotalPrice    float32     `json:"total_price"`
+	PaymentMethod string       `json:"payment_method"`
+	TaxPrice      float32      `json:"tax_price"`
+	ShippingPrice float32      `json:"shipping_price"`
+	TotalPrice    float32      `json:"total_price"`
+	Status        string       `json:"status"`
 }
 
 type OrderItem struct {
@@ -45,14 +47,15 @@ type OrderItem struct {
 }
 
 type OrderRes struct {
-	ID            int64       `json:"id"`
+	ID            int64        `json:"id"`
 	Items         []*OrderItem `json:"items"`
-	PaymentMethod string      `json:"payment_method"`
-	TaxPrice      float32     `json:"tax_price"`
-	ShippingPrice float32     `json:"shipping_price"`
-	TotalPrice    float32     `json:"total_price"`
-	CreatedAt     time.Time   `json:"created_at"`
-	UpdatedAt     *time.Time  `json:"updated_at"`
+	PaymentMethod string       `json:"payment_method"`
+	TaxPrice      float32      `json:"tax_price"`
+	ShippingPrice float32      `json:"shipping_price"`
+	TotalPrice    float32      `json:"total_price"`
+	Status        string       `json:"status"`
+	CreatedAt     time.Time    `json:"created_at"`
+	UpdatedAt     *time.Time   `json:"updated_at"`
 }
 
 type UserReq struct {
@@ -91,6 +94,6 @@ type RenewAccessTokenReq struct {
 }
 
 type RenewAccessTokenRes struct {
-	AccessToken         string    `json:"access_token"`
+	AccessToken          string    `json:"access_token"`
 	AccessTokenExpiresAt time.Time `json:"access_token_expires_at"`
 }
