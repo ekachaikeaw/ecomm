@@ -32,8 +32,8 @@ func (ms *MySQLStorer) CreateProduct(ctx context.Context, p *Product) (*Product,
 	if err != nil {
 		return nil, fmt.Errorf("error getting last insert ID: %w", err)
 	}
-
 	p.ID = id
+
 	return p, nil
 }
 
@@ -83,17 +83,15 @@ func (ms *MySQLStorer) CreateOrder(ctx context.Context, o *Order) (*Order, error
 			return fmt.Errorf("error creating order: %w", err)
 		}
 
-		for _, oi := range order.Items {
-			// insert into order_items
+		for _, oi := range o.Items {
 			oi.OrderID = order.ID
-			id, err := createOrderItem(ctx, tx, oi)
+			// insert into order_items
+			err = createOrderItem(ctx, tx, oi)
 			if err != nil {
 				return fmt.Errorf("error creating order item: %w", err)
 			}
-			oi.ID = id
 		}
 		return nil
-
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error creating order: %w", err)
@@ -105,9 +103,9 @@ func (ms *MySQLStorer) CreateOrder(ctx context.Context, o *Order) (*Order, error
 func createOrder(ctx context.Context, tx *sqlx.Tx, o *Order) (*Order, error) {
 	res, err := tx.NamedExecContext(ctx, "INSERT INTO orders (payment_method, tax_price, shipping_price, total_price, user_id) VALUES (:payment_method, :tax_price, :shipping_price, :total_price, :user_id)", o)
 	if err != nil {
-		fmt.Print(err)
-		return nil, fmt.Errorf("error inserting order %w", err)
+		return nil, fmt.Errorf("error inserting order: %w", err)
 	}
+
 	id, err := res.LastInsertId()
 	if err != nil {
 		return nil, fmt.Errorf("error getting last insert ID: %w", err)
@@ -117,25 +115,26 @@ func createOrder(ctx context.Context, tx *sqlx.Tx, o *Order) (*Order, error) {
 	return o, nil
 }
 
-func createOrderItem(ctx context.Context, tx *sqlx.Tx, oi OrderItem) (int64, error) {
+func createOrderItem(ctx context.Context, tx *sqlx.Tx, oi OrderItem) error {
 	res, err := tx.NamedExecContext(ctx, "INSERT INTO order_items (name, quantity, image, price, product_id, order_id) VALUES (:name, :quantity, :image, :price, :product_id, :order_id)", oi)
 	if err != nil {
-		return 0, fmt.Errorf("error inserting order item: %w", err)
+		return fmt.Errorf("error inserting order item: %w", err)
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
-		return 0, fmt.Errorf("error getting last insert ID: %w", err)
+		return fmt.Errorf("error getting last insert ID: %w", err)
 	}
+	oi.ID = id
 
-	return id, nil
+	return nil
 }
 
-func (ms *MySQLStorer) GetOrder(ctx context.Context, userId int64) (*Order, error) {
+func (ms *MySQLStorer) GetOrder(ctx context.Context, userID int64) (*Order, error) {
 	var o Order
-	err := ms.db.GetContext(ctx, &o, "SELECT * FROM orders WHERE user_id=?", userId)
+	err := ms.db.GetContext(ctx, &o, "SELECT * FROM orders WHERE user_id=?", userID)
 	if err != nil {
-		return nil, fmt.Errorf("error getting orders: %w", err)
+		return nil, fmt.Errorf("error getting order: %w", err)
 	}
 
 	var items []OrderItem
@@ -148,7 +147,7 @@ func (ms *MySQLStorer) GetOrder(ctx context.Context, userId int64) (*Order, erro
 	return &o, nil
 }
 
-func (ms *MySQLStorer) GetOrderStatusById(ctx context.Context, id int64) (*Order, error) {
+func (ms *MySQLStorer) GetOrderStatusByID(ctx context.Context, id int64) (*Order, error) {
 	var o Order
 	err := ms.db.GetContext(ctx, &o, "SELECT id, user_id, status FROM orders WHERE id=?", id)
 	if err != nil {
@@ -167,17 +166,18 @@ func (ms *MySQLStorer) ListOrders(ctx context.Context) ([]*Order, error) {
 
 	for i := range orders {
 		var items []OrderItem
-		err := ms.db.SelectContext(ctx, &items, "SELECT * FROM order_items WHERE order_id=?", orders[i].ID)
+		err = ms.db.SelectContext(ctx, &items, "SELECT * FROM order_items WHERE order_id=?", orders[i].ID)
 		if err != nil {
 			return nil, fmt.Errorf("error getting order items: %w", err)
 		}
 		orders[i].Items = items
 	}
+
 	return orders, nil
 }
 
 func (ms *MySQLStorer) UpdateOrderStatus(ctx context.Context, o *Order) (*Order, error) {
-	_, err := ms.db.NamedExecContext(ctx, "UPDATE orders SET status=:status, updated_at:=updated_at WHERE id=:id", o)
+	_, err := ms.db.NamedExecContext(ctx, "UPDATE orders SET status=:status, updated_at=:updated_at WHERE id=:id", o)
 	if err != nil {
 		return nil, fmt.Errorf("error updating order status: %w", err)
 	}
@@ -196,6 +196,7 @@ func (ms *MySQLStorer) DeleteOrder(ctx context.Context, id int64) error {
 		if err != nil {
 			return fmt.Errorf("error deleting order: %w", err)
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -208,7 +209,7 @@ func (ms *MySQLStorer) DeleteOrder(ctx context.Context, id int64) error {
 func (ms *MySQLStorer) execTx(ctx context.Context, fn func(*sqlx.Tx) error) error {
 	tx, err := ms.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("error startign transaction: %w", err)
+		return fmt.Errorf("error starting transaction: %w", err)
 	}
 
 	err = fn(tx)
@@ -262,7 +263,7 @@ func (ms *MySQLStorer) ListUsers(ctx context.Context) ([]*User, error) {
 }
 
 func (ms *MySQLStorer) UpdateUser(ctx context.Context, u *User) (*User, error) {
-	_, err := ms.db.NamedExecContext(ctx, "UPDATE users SET name=:name, email=:email, password:=password, is_admin:=is_admin, updated_at:=updated_at", u)
+	_, err := ms.db.NamedExecContext(ctx, "UPDATE users SET name=:name, email=:email, password=:password, is_admin=:is_admin, updated_at=:updated_at WHERE id=:id", u)
 	if err != nil {
 		return nil, fmt.Errorf("error updating user: %w", err)
 	}
@@ -282,7 +283,6 @@ func (ms *MySQLStorer) DeleteUser(ctx context.Context, id int64) error {
 func (ms *MySQLStorer) CreateSession(ctx context.Context, s *Session) (*Session, error) {
 	_, err := ms.db.NamedExecContext(ctx, "INSERT INTO sessions (id, user_email, refresh_token, is_revoked, expires_at) VALUES (:id, :user_email, :refresh_token, :is_revoked, :expires_at)", s)
 	if err != nil {
-		fmt.Print(err)
 		return nil, fmt.Errorf("error inserting session: %w", err)
 	}
 
@@ -306,11 +306,10 @@ func (ms *MySQLStorer) RevokeSession(ctx context.Context, id string) error {
 	}
 
 	return nil
-	// my code
 }
 
 func (ms *MySQLStorer) DeleteSession(ctx context.Context, id string) error {
-	_, err := ms.db.ExecContext(ctx, "DELETE FROM session WHERE id=?", id)
+	_, err := ms.db.ExecContext(ctx, "DELETE FROM sessions WHERE id=?", id)
 	if err != nil {
 		return fmt.Errorf("error deleting session: %w", err)
 	}
@@ -323,11 +322,13 @@ func insertNotificationState(ctx context.Context, tx *sqlx.Tx, es *NotificationS
 	if err != nil {
 		return nil, fmt.Errorf("error inserting notification state: %w", err)
 	}
+
 	id, err := res.LastInsertId()
 	if err != nil {
 		return nil, fmt.Errorf("error getting last insert ID: %w", err)
 	}
 	es.ID = id
+
 	return es, nil
 }
 
@@ -336,11 +337,13 @@ func insertNotificationEvent(ctx context.Context, tx *sqlx.Tx, u *NotificationEv
 	if err != nil {
 		return nil, fmt.Errorf("error inserting notification event: %w", err)
 	}
+
 	id, err := res.LastInsertId()
 	if err != nil {
 		return nil, fmt.Errorf("error getting last insert ID: %w", err)
 	}
 	u.ID = id
+
 	return u, nil
 }
 
@@ -352,7 +355,6 @@ func (ms *MySQLStorer) EnqueueNotificationEvent(ctx context.Context, ne *Notific
 			State:   NotSent,
 			Message: "",
 		})
-
 		if err != nil {
 			return fmt.Errorf("error inserting notification state: %w", err)
 		}
@@ -362,21 +364,25 @@ func (ms *MySQLStorer) EnqueueNotificationEvent(ctx context.Context, ne *Notific
 		if err != nil {
 			return fmt.Errorf("error inserting notification event: %w", err)
 		}
+
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error enqueuing notification event: %w", err)
 	}
+
 	return ev, nil
 }
 
 func (ms *MySQLStorer) ListNotificationEvents(ctx context.Context) ([]*NotificationEvent, error) {
 	var events []*NotificationEvent
+
 	q := fmt.Sprintf("SELECT * FROM notification_events_queue WHERE attempts < %d ORDER BY created_at", maxAttempts)
 	err := ms.db.SelectContext(ctx, &events, q)
 	if err != nil {
 		return nil, fmt.Errorf("error listing notification events: %w", err)
 	}
+
 	return events, nil
 }
 
@@ -386,6 +392,7 @@ func getNotificationEventAttempts(ctx context.Context, tx *sqlx.Tx, id int64) (*
 	if err != nil {
 		return nil, fmt.Errorf("error getting notification event: %w", err)
 	}
+
 	return &u, nil
 }
 
@@ -394,6 +401,7 @@ func updateNotificationEventAttempts(ctx context.Context, tx *sqlx.Tx, u *Notifi
 	if err != nil {
 		return nil, fmt.Errorf("error updating notification event: %w", err)
 	}
+
 	return u, nil
 }
 
@@ -402,6 +410,7 @@ func deleteNotificationEvent(ctx context.Context, tx *sqlx.Tx, id int64) error {
 	if err != nil {
 		return fmt.Errorf("error deleting notification event: %w", err)
 	}
+
 	return nil
 }
 
@@ -412,10 +421,12 @@ func updateNotificationState(ctx context.Context, tx *sqlx.Tx, es *NotificationS
 		es.CompletedAt = &t
 		q = "UPDATE notification_states SET state=:state, message=:message, completed_at=:completed_at WHERE id=:id"
 	}
+
 	_, err := tx.NamedExecContext(ctx, q, es)
 	if err != nil {
 		return fmt.Errorf("error updating notification state: %w", err)
 	}
+
 	return nil
 }
 
@@ -432,6 +443,7 @@ func (ms *MySQLStorer) UpdateNotificationEvent(ctx context.Context, ev *Notifica
 			if err != nil {
 				return fmt.Errorf("error updating notification state: %w", err)
 			}
+
 			err = deleteNotificationEvent(ctx, tx, ev.ID)
 			if err != nil {
 				return fmt.Errorf("error deleting notification event: %w", err)
@@ -442,10 +454,12 @@ func (ms *MySQLStorer) UpdateNotificationEvent(ctx context.Context, ev *Notifica
 			if err != nil {
 				return fmt.Errorf("error getting notification event: %w", err)
 			}
+
 			if u.Attempts+1 < maxAttempts {
 				t := time.Now()
 				u.UpdatedAt = &t
 				u.Attempts += 1
+
 				_, err = updateNotificationEventAttempts(ctx, tx, u)
 				if err != nil {
 					return fmt.Errorf("error updating notification event: %w", err)
@@ -459,15 +473,19 @@ func (ms *MySQLStorer) UpdateNotificationEvent(ctx context.Context, ev *Notifica
 				if err != nil {
 					return fmt.Errorf("error updating notification state: %w", err)
 				}
+
 				err = deleteNotificationEvent(ctx, tx, u.ID)
 				if err != nil {
 					return fmt.Errorf("error deleting notification event: %w", err)
 				}
 			}
+
 		default:
 			return fmt.Errorf("invalid notification response type: %v", responseType)
 		}
+
 		return nil
 	})
+
 	return succeeded, err
 }

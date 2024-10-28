@@ -70,6 +70,7 @@ func (s *Server) DeleteProduct(ctx context.Context, p *pb.ProductReq) (*pb.Produ
 func (s *Server) CreateOrder(ctx context.Context, o *pb.OrderReq) (*pb.OrderRes, error) {
 	order, err := s.storer.CreateOrder(ctx, toStorerOrder(o))
 	if err != nil {
+		fmt.Print(err)
 		return nil, err
 	}
 	order.Status = storer.Pending
@@ -81,6 +82,7 @@ func (s *Server) CreateOrder(ctx context.Context, o *pb.OrderReq) (*pb.OrderRes,
 		Attempts:    0,
 	})
 	if err != nil {
+		fmt.Print(err)
 		return nil, err
 	}
 
@@ -109,17 +111,20 @@ func (s *Server) ListOrders(ctx context.Context, o *pb.OrderReq) (*pb.ListOrderR
 
 func (s *Server) UpdateOrderStatus(ctx context.Context, o *pb.OrderReq) (*pb.OrderRes, error) {
 	// validate the order req
-	order, err := s.storer.GetOrderStatusById(ctx, o.Id)
+	order, err := s.storer.GetOrderStatusByID(ctx, o.Id)
 	if err != nil {
+		fmt.Print(err)
 		return nil, err
 	}
 
 	if o.GetUserId() != order.UserID {
+		fmt.Print(err)
 		return nil, fmt.Errorf("order %d does not belong to user %d", o.GetId(), o.GetUserId())
 	}
 
 	sOrderStatus := storer.OrderStatus(strings.ToLower(o.GetStatus().String()))
 	if sOrderStatus == order.Status {
+		fmt.Print(err)
 		return nil, fmt.Errorf("order status is already %s", order.Status)
 	}
 
@@ -127,6 +132,7 @@ func (s *Server) UpdateOrderStatus(ctx context.Context, o *pb.OrderReq) (*pb.Ord
 	order.UpdatedAt = toTimePtr(time.Now())
 	or, err := s.storer.UpdateOrderStatus(ctx, order)
 	if err != nil {
+		fmt.Print(err)
 		return nil, err
 	}
 
@@ -138,6 +144,7 @@ func (s *Server) UpdateOrderStatus(ctx context.Context, o *pb.OrderReq) (*pb.Ord
 		Attempts:    0,
 	})
 	if err != nil {
+		fmt.Print(err)
 		return nil, err
 	}
 

@@ -93,7 +93,7 @@ type NotificationState struct {
 type NotificationEvent struct {
 	ID          int64       `db:"id"`
 	UserEmail   string      `db:"user_email"`
-	OrderStatus OrderStatus `db:"order"`
+	OrderStatus OrderStatus `db:"order_status"`
 	OrderID     int64       `db:"order_id"`
 	StateID     int64       `db:"state_id"`
 	Attempts    int64       `db:"attempts"`
